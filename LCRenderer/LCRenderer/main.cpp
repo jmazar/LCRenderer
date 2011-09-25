@@ -1,20 +1,102 @@
+#include <Windows.h>
 #include <iostream>
 #include "DataParser.hpp"
-int main()
+
+HWND ghMainWnd = 0;
+
+ATOM MyRegisterClass(HINSTANCE hInstance);
+bool InitWindowsApp(HINSTANCE hInstance, int show);
+
+int Run();
+
+LRESULT CALLBACK
+  WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+int WINAPI WinMain(HINSTANCE hInstance, 
+  HINSTANCE hPrevInstance,
+  PSTR pCmdLine,
+  int nShowCmd)
 {
+  MyRegisterClass(hInstance);
+  if(!InitWindowsApp(hInstance, nShowCmd))
+      return 0;
 
-	DataParser parser(57.2957795);
+  return Run();
+}
 
-	DataPoint point;
+ATOM MyRegisterClass(HINSTANCE hInstance)
+{
+   WNDCLASS wc;
 
-	int i = 0;
-	parser.OpenFile("traj.inp");
-	while(parser.GetNextDataPoint(point) > 0)
-	{
-		i++;
-		printf("%d\n", i);
-	}
-	
-	parser.CloseFile();
-	return 0;
+   wc.style = CS_HREDRAW | CS_VREDRAW;
+   wc.lpfnWndProc = WndProc;
+   wc.cbClsExtra = 0;
+   wc.cbWndExtra = 0;
+   wc.hInstance = hInstance;
+   wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+   wc.hCursor = LoadCursor(0, IDC_ARROW);
+   wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+   wc.lpszMenuName = 0;
+   wc.lpszClassName = L"LCRenderer";
+
+  return RegisterClass(&wc);
+}
+
+bool InitWindowsApp(HINSTANCE hInstance,
+  int show)
+{
+  ghMainWnd = CreateWindow(
+    L"LCRenderer", 
+    L"LCRenderer", 
+    WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT, 
+    0, 
+    640, 
+    480, 
+    NULL, 
+    NULL, 
+    hInstance, 
+    NULL);
+
+  ShowWindow(ghMainWnd, show);
+  UpdateWindow(ghMainWnd);
+
+  return true;
+}
+
+int Run()
+{
+  MSG msg = {0};
+
+  BOOL bRet = 1;
+  while( (bRet = GetMessage(&msg,0,0,0)) != 0)
+  {
+    if(-1 == bRet)
+    {
+      MessageBox(0, L"GetMessage FAILED", L"Error", MB_OK);
+      break;
+    }
+    else
+    {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+  }
+
+  return (int)msg.wParam;
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd,
+  UINT msg,
+  WPARAM wParam,
+  LPARAM lParam)
+{
+  switch( msg )
+  {
+  case WM_DESTROY:
+    PostQuitMessage(0);
+    return 0;
+  }
+
+  return DefWindowProc(hWnd, msg, wParam, lParam);
 }
