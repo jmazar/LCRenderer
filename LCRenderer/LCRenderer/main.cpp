@@ -1,8 +1,11 @@
 #include <Windows.h>
 #include <iostream>
+#include "Renderer.hpp"
 #include "DataParser.hpp"
 
 HWND ghMainWnd = 0;
+
+Renderer* g_pRenderer;
 
 ATOM MyRegisterClass(HINSTANCE hInstance);
 bool InitWindowsApp(HINSTANCE hInstance, int show);
@@ -17,11 +20,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
   PSTR pCmdLine,
   int nShowCmd)
 {
+	
+
   MyRegisterClass(hInstance);
   if(!InitWindowsApp(hInstance, nShowCmd))
       return 0;
-
-  return Run();
+	g_pRenderer = new Renderer(hInstance, ghMainWnd);
+	g_pRenderer->InitDirect3D();
+  return g_pRenderer->Run();
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
@@ -91,12 +97,5 @@ LRESULT CALLBACK WndProc(HWND hWnd,
   WPARAM wParam,
   LPARAM lParam)
 {
-  switch( msg )
-  {
-  case WM_DESTROY:
-    PostQuitMessage(0);
-    return 0;
-  }
-
-  return DefWindowProc(hWnd, msg, wParam, lParam);
+  return g_pRenderer->WndProc(hWnd, msg, wParam, lParam);
 }
