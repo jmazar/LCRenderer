@@ -29,5 +29,5 @@ public:
 
 	int OpenFile(std::string fileName);
 	int CloseFile();
-	int GetNextDataPoint(DataPoint& data);
+	int GetNextDataPoint(DataPoint* data);
 };
