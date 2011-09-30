@@ -40,49 +40,48 @@ void Renderer::DrawScene()
     mView = *g_Camera.GetViewMatrix();
 
     // Update the effect's variables
-    g_pEffect->SetMatrix( g_HandleWorld, &mWorld );
-    g_pEffect->SetMatrix( g_HandleView, &mView );
-    g_pEffect->SetMatrix( g_HandleProjection, &mProj );
+    m_pEffect->SetMatrix( g_HandleWorld, &mWorld );
+    m_pEffect->SetMatrix( g_HandleView, &mView );
+    m_pEffect->SetMatrix( g_HandleProjection, &mProj );
 
     HRESULT hr;
     UINT iPass, cPasses;
 
-    pd3dDevice->SetVertexDeclaration( m_pVertexDeclHardware );
+    m_pDevice->SetVertexDeclaration( m_pVertexDeclHardware );
 
     // Stream zero is our model, and its frequency is how we communicate the number of instances required,
     // which in this case is the total number of boxes
-    pd3dDevice->SetStreamSource( 0, m_pVB, 0, sizeof( BOX_VERTEX ) );
-    pd3dDevice->SetStreamSourceFreq( 0, D3DSTREAMSOURCE_INDEXEDDATA | g_NumBoxes );
+    m_pDevice->SetStreamSource( 0, m_pVB, 0, D3DXGetDeclVertexSize( m_VertexDeclaration , 0) );
+    m_pDevice->SetStreamSourceFreq( 0, D3DSTREAMSOURCE_INDEXEDDATA | m_Size);
 
     // Stream one is the instancing buffer, so this advances to the next value
     // after each box instance has been drawn, so the divider is 1.
-    pd3dDevice->SetStreamSource( 1, m_pVBInstanceData, 0, sizeof( BOX_INSTANCEDATA_POS ) );
-    pd3dDevice->SetStreamSourceFreq( 1, D3DSTREAMSOURCE_INSTANCEDATA | 1ul );
+    m_pDevice->SetStreamSource( 1, m_pVBInstanceData, 0, D3DXGetDeclVertexSize( g_VBDecl_InstanceData ,1 ) );
+    m_pDevice->SetStreamSourceFreq( 1, D3DSTREAMSOURCE_INSTANCEDATA | 1ul );
 
-    pd3dDevice->SetIndices( m_pIB ); 
+    m_pDevice->SetIndices( m_pIB ); 
 
     // Render the scene with this technique
     // as defined in the .fx file
-    g_pEffect->SetTechnique( g_HandleTechnique );
+    m_pEffect->SetTechnique( "" );
 
-    g_pEffect->Begin( &cPasses, 0 );
+    m_pEffect->Begin( &cPasses, 0 );
     for( iPass = 0; iPass < cPasses; iPass++ )
     {
-      g_pEffect->BeginPass( iPass );
+      m_pEffect->BeginPass( iPass );
 
       // Render the boxes with the applied technique
-      g_pEffect->SetTexture( g_HandleTexture, g_pBoxTexture );
 
       // The effect interface queues up the changes and performs them 
       // with the CommitChanges call. You do not need to call CommitChanges if 
       // you are not setting any parameters between the BeginPass and EndPass.
-      g_pEffect->CommitChanges();
+      m_pEffect->CommitChanges();
 
-      pd3dDevice->DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, 0, 4 * 6, 0, 6 * 2 );
+      m_pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, 0, 4 * 6, 0, 6 * 2 );
 
-      g_pEffect->EndPass();
+      m_pEffect->EndPass();
     }
-    g_pEffect->End();
+    m_pEffect->End();
 
     m_pDevice->SetStreamSourceFreq( 0, 1 );
     m_pDevice->SetStreamSourceFreq( 1, 1 );
@@ -205,8 +204,9 @@ void Renderer::CloseDevice()
   }
 }
 
-void Renderer::CreateBuffers()
+void Renderer::CreateBuffers(std::vector<DataPoint*> dataArray)
 {
+  m_Size = dataArray.size();
   m_pSphere->GetVertexBuffer(&m_pVB);
   //this is probably going to break but whatever
   m_pSphere->GetDeclaration(m_VertexDeclaration);
@@ -214,7 +214,42 @@ void Renderer::CreateBuffers()
   m_pSphere->GetIndexBuffer(&m_pIB);
   m_pDevice->CreateVertexDeclaration( m_VertexDeclaration, &m_pVertexDeclHardware );
 
-  m_pDevice->CreateVertexBuffer(size, 0, 0, D3DPOOL_MANAGED, &m_pVBInstanceData, 0);
+  m_pDevice->CreateVertexBuffer(m_Size, 0, 0, D3DPOOL_MANAGED, &m_pVBInstanceData, 0);
+
+  D3DXMATRIXA16 sphereTransform;
+  D3DXMATRIXA16 ellipTransform;
+
+  D3DXMatrixIdentity(&sphereTransform);
+  D3DXMatrixIdentity(&ellipTransform);
+
+  D3DXMATRIXA16 transform;
+  D3DXMATRIXA16 rotate;
+
+  for(std::vector<DataPoint*>::iterator i = dataArray.begin();
+    i != dataArray.end();
+    i++)
+  {
+    D3DXMatrixIdentity(&sphereTransform);
+    D3DXMatrixIdentity(&ellipTransform);
+    D3DXMatrixIdentity(&transform);
+    D3DXMatrixIdentity(&rotate);
+
+    if(1 == (*i)->type)
+    {
+      D3DXMatrixTranslation(&transform, (*i)->x, (*i)->y, (*i)->z);
+
+
+      sphereTransform = sphereTransform * transform; 
+    }
+    else if(2 == (*i)->type)
+    {
+      D3DXMatrixTranslation(&transform, (*i)->x, (*i)->y, (*i)->z);
+      D3DXMatrixRotationYawPitchRoll(&rotate, 0.0f, (*i)->ry, (*i)->rz);
+      ellipTransform = ellipTransform * rotate * transform;
+    }
+  }
+
+
 
   //TODO fill instancing buffer
 }

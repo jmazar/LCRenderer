@@ -1,6 +1,12 @@
+#pragma once
+
 #include <Windows.h>
 #include <d3dx9.h>
 #include <d3d9.h>
+#include "DataParser.hpp"
+#include <vector>
+#include <iterator>
+
 
 const D3DVERTEXELEMENT9 g_VBDecl_Geometry[] =
 {
@@ -32,8 +38,10 @@ public:
   int 		InitDirect3D();
   LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
   int			Run();
+  void CreateBuffers(std::vector<DataPoint*> dataArray);
 private:
-  void CreateBuffers();
+  
+  int                    m_Size;
   IDirect3DDevice9*        m_pDevice;
   IDirect3DVertexBuffer9*   m_pVB;
   IDirect3DIndexBuffer9*    m_pIB;

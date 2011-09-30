@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Renderer.hpp"
 #include "DataParser.hpp"
+#include <vector>
 
 HWND ghMainWnd = 0;
 
@@ -20,13 +21,26 @@ int WINAPI WinMain(HINSTANCE hInstance,
   PSTR pCmdLine,
   int nShowCmd)
 {
-	
+  DataParser parser(5.34234);
+
+  std::vector<DataPoint*> data;
+  DataPoint* pData = new DataPoint();
+
+  while(parser.GetNextDataPoint(pData))
+  {
+    data.push_back(pData);
+    pData = new DataPoint();
+  }
+
+
 
   MyRegisterClass(hInstance);
   if(!InitWindowsApp(hInstance, nShowCmd))
       return 0;
-	g_pRenderer = new Renderer(hInstance, ghMainWnd);
-	g_pRenderer->InitDirect3D();
+  g_pRenderer = new Renderer(hInstance, ghMainWnd);
+  g_pRenderer->InitDirect3D();
+
+  g_pRenderer->CreateBuffers(data);
   return g_pRenderer->Run();
 }
 
