@@ -22,11 +22,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
   int nShowCmd)
 {
   DataParser parser(5.34234);
-
+  parser.OpenFile("traj.inp");
   std::vector<DataPoint*> data;
   DataPoint* pData = new DataPoint();
 
-  while(parser.GetNextDataPoint(pData))
+  while(1 == parser.GetNextDataPoint(pData))
   {
     data.push_back(pData);
     pData = new DataPoint();
